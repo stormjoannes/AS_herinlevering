@@ -32,6 +32,23 @@ class Maze:
         else:
             return position
 
+    def get_surrounding_values(self, position: tuple) -> list:
+        """
+        Get the surrounding states for current position
+
+            Parameters:
+                position(tuple): Current x and y-axis position
+
+            Return:
+                states(dict): list with for each state the surrounding rewards and values
+        """
+        states = []
+        for action in self.actions.keys():
+            state = self.stepper(position, action)
+            states.append(self.grid[state][-1])
+        print(states)
+        return states
+
     def surrounding_states(self, position: tuple) -> dict:
         """
         Get the surrounding states for current position

@@ -27,7 +27,7 @@ agent = Agent(start_position, maze, policy, delta_threshold)
 
 # agent.temporal_difference(1, 0.5, 10)
 # agent.temporal_difference(0.5, 0.5, 10)
-agent.sarsa(1, 0.25, 0.1, 100000)
+agent.sarsa(1, 0.25, 0.1, 10000)
 # agent.sarsa(0.9, 0.25, 0.1, 100000)
 # agent.q_learning(1, 0.25, 0.1, 100000)
 # agent.q_learning(0.9, 0.5, 0.1, 100000)
