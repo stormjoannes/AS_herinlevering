@@ -101,36 +101,37 @@ class Agent:
         for episode in range(episodes):
             print("episode: ", episode)
             # Initialize S
-            state = self.position
+            current_position = self.position
 
             print('\n')
-            print(state)
+            print(current_position)
             # Take action A using policy derived from Q (e.g., ε-greedy)
-            action = self.policy.decide_action_value(epsilon, self.maze.surrounding_values[state])
+            action = self.policy.decide_action_value(epsilon, self.maze.surrounding_values[current_position])
 
             # until S is terminal
-            while state not in self.maze.terminal_states:
+            while current_position not in self.maze.terminal_states:
                 # Take action A, observe R, S'
-                next_position = self.maze.stepper(self.position, action)
+                next_position = self.maze.stepper(current_position, action)
                 reward = self.maze.rewards[next_position]
 
                 # Choose A' from S' using policy derived from Q (e.g., ε-greedy)
                 next_action = self.policy.decide_action_value(epsilon, self.maze.surrounding_values[next_position])
 
                 # Q(S, A) <- Q(S, A) + α[R + γQ(S', A') - Q(S, A)]
-                current_q_value = self.maze.surrounding_values[state][action]
+                current_q_value = self.maze.surrounding_values[current_position][action]
                 next_q_value = self.maze.surrounding_values[next_position][next_action]
                 updated_q_value = current_q_value + learning_rate * (reward + discount * next_q_value - current_q_value)
-                self.maze.surrounding_values[state][action] = updated_q_value
+                self.maze.surrounding_values[current_position][action] = updated_q_value
 
                 # Set A <- A'
                 action = next_action
 
                 # Set S <- S'
-                self.position = next_position
-                state = next_position
+                current_position = next_position
+                # print(self.maze.surrounding_values)
+                # state = next_position
 
-            self.position = (3, 2)
+            # self.position = (3, 2)
 
         self.plot_sarsa_values(f"SARSA_{discount}")
         self.plot_sarsa_directions(f"SARSA_{discount}")
@@ -148,29 +149,26 @@ class Agent:
         # Loop for each episode
         for episode in range(episodes):
             # Initialize S
-            state = self.position
+            current_position = self.position
 
             # until S is terminal
-            while state not in self.maze.terminal_states:
+            while current_position not in self.maze.terminal_states:
                 # Choose A from S using policy derived from Q (e.g., ε-greedy)
-                action = self.policy.decide_action_value(epsilon, self.maze.surrounding_values[state])
-                next_position = self.maze.stepper(self.position, action)
-                reward = self.maze.rewards[next_position]
+                action = self.policy.decide_action_value(epsilon, self.maze.surrounding_values[current_position])
 
                 # Take action A, observe R, S'
+                next_position = self.maze.stepper(current_position, action)
+                reward = self.maze.rewards[next_position]
+
+                # Choose max_a Q(S', a)
                 max_next_action_value = max(self.maze.surrounding_values[next_position])
 
                 # Q(S, A) <- Q(S, A) + α[R + γmax_a Q(S', a) - Q(S, A)]
-                self.maze.surrounding_values[state][action] += learning_rate * (
-                            reward + discount * max_next_action_value - self.maze.surrounding_values[state][action])
+                self.maze.surrounding_values[current_position][action] += learning_rate * (
+                            reward + discount * max_next_action_value - self.maze.surrounding_values[current_position][action])
 
                 # Set S <- S'
-                state = next_position
-                self.position = next_position
-            #     print(self.maze.surrounding_values[state])
-            # test break
-
-            self.position = (3, 2)
+                current_position = next_position
 
         self.plot_sarsa_values(f"Q-learning_{discount}")
         self.plot_sarsa_directions(f"Q-learning_{discount}")
