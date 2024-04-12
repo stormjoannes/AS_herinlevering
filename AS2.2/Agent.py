@@ -101,43 +101,39 @@ class Agent:
         for episode in range(episodes):
             print("episode: ", episode)
             # Initialize S
-            current_position = self.position
+            state = self.position
 
             print('\n')
-            print(current_position)
+            print(state)
             # Take action A using policy derived from Q (e.g., ε-greedy)
-            action = self.policy.decide_action_value(epsilon, self.maze.get_surrounding_values(current_position))
+            action = self.policy.decide_action_value(epsilon, self.maze.surrounding_values[state])
 
             # until S is terminal
-            while current_position not in self.maze.terminal_states:
+            while state not in self.maze.terminal_states:
                 # Take action A, observe R, S'
-                next_position = self.maze.stepper(current_position, action)
+                next_position = self.maze.stepper(self.position, action)
                 reward = self.maze.rewards[next_position]
 
                 # Choose A' from S' using policy derived from Q (e.g., ε-greedy)
-                next_action = self.policy.decide_action_value(epsilon, self.maze.get_surrounding_values(next_position))
+                next_action = self.policy.decide_action_value(epsilon, self.maze.surrounding_values[next_position])
 
                 # Q(S, A) <- Q(S, A) + α[R + γQ(S', A') - Q(S, A)]
-                current_q_value = self.maze.get_surrounding_values(current_position)[action]
-                next_q_value = self.maze.get_surrounding_values(next_position)[next_action]
+                current_q_value = self.maze.surrounding_values[state][action]
+                next_q_value = self.maze.surrounding_values[next_position][next_action]
                 updated_q_value = current_q_value + learning_rate * (reward + discount * next_q_value - current_q_value)
-                print("current_q_value: ", current_q_value)
-                print("next_q_value: ", next_q_value)
-                print("updated_q_value: ", updated_q_value)
-                print('\n')
-                self.maze.grid[current_position].append(updated_q_value)
+                self.maze.surrounding_values[state][action] = updated_q_value
 
-                # Set S <- S'; Set A <- A'
-                current_position = next_position
+                # Set A <- A'
                 action = next_action
 
-            # self.position = (3, 2)
+                # Set S <- S'
+                self.position = next_position
+                state = next_position
 
-        # self.plot_sarsa_values(f"SARSA_{discount}")
-        # self.plot_sarsa_directions(f"SARSA_{discount}")
-        self.plot_new_values(f"SARSA_{discount}")
-        self.plot_last_val(f"SARSA_{discount}")
-        print(self.maze.grid)
+            self.position = (3, 2)
+
+        self.plot_sarsa_values(f"SARSA_{discount}")
+        self.plot_sarsa_directions(f"SARSA_{discount}")
 
     def q_learning(self, discount: float, learning_rate: float, epsilon: float, episodes: int):
         """
@@ -358,69 +354,3 @@ class Agent:
         plt.tight_layout()
         plt.savefig(f'AS{plt_name}_visualization.png')
         plt.show()
-
-    def plot_new_values(self, plt_name):
-        # Define directions
-        directions = ["Up", "Down", "Left", "Right"]
-
-        # Initialize an array to store the directions
-        directions_array = np.zeros((4, 4), dtype=int)
-
-        # Fill the array with the directions based on the provided dictionary
-        for i in range(4):
-            for j in range(4):
-                # Get the index of the direction with the highest value
-                max_direction_index = np.argmax(self.maze.grid[(i, j)][-4:])
-                directions_array[i, j] = max_direction_index
-
-        # Plot the heatmap
-        plt.imshow(directions_array, cmap='viridis')
-
-        # Add labels and title
-        plt.xlabel('X-axis position')
-        plt.ylabel('Y-axis position')
-        plt.title('Highest Value Direction for Each Coordinate')
-
-        # Display the values on the heatmap
-        for i in range(4):
-            for j in range(4):
-                plt.text(j, i, directions[directions_array[i, j]], ha='center', va='center', color='w')
-
-        # Show the plot
-        plt.colorbar(label='Direction')
-        plt.grid(False)
-        plt.savefig(f'AS_{plt_name}_directions_visualization.png')
-        plt.show()
-
-    def plot_last_val(self, plt_name):
-        """
-        Plot the last value in a state transition matrix
-        """
-        rows = len(self.maze.grid)
-        cols = len(self.maze.grid)
-
-        values = []
-        for r in range(4):
-            row_values = []
-            for c in range(4):
-                key = (r, c)
-                row_values.append(round(self.maze.grid[key][-1], 2))  # Taking the last value for each cell
-            values.append(row_values)
-
-        plt.figure(figsize=(8, 6))
-        plt.imshow(values, cmap='viridis', interpolation='nearest')
-
-        for r in range(4):
-            for c in range(4):
-                color = 'black' if values[r][c] > 30 else 'white'
-                plt.text(c, r, values[r][c], ha='center', va='center', color=color)
-
-        plt.title('Last Value Heatmap')
-        plt.xticks(range(4))
-        plt.yticks(range(4))
-        plt.xlabel('Column')
-        plt.ylabel('Row')
-        plt.colorbar(label='Value')
-        plt.savefig(f'AS{plt_name}_last_value_visualization.png')
-        plt.show()
-
