@@ -21,36 +21,24 @@ class Agent:
         """
         Predict actions, calculate new values and train the model.
         """
-        # Sample random minibatch of transitions from D
+        # Sample random minibatch of transitions et = (st, at, rt, st+1) from D
         states, actions, rewards, next_states, terminated = self.memory.sample()
-        actions_states = self.policy.model.predict(states)
 
-        next_state_q_value = self.policy.model.predict(next_states)
-        q_values = np.copy(actions_states)
+        # Predict Q values for current and next states
+        current_q_values = self.policy.model.predict(states)
+        next_q_values = self.policy.model.predict(next_states).reshape(self.memory.batch_size, -1)
 
-        # ----------------------- OLD -----------------------
-        # Loop for each row and calculate action state value
-        for row, action in zip(range(len(actions_states[0])), actions):
-            # set y_j = r_j for terminal φ_j+1, otherwise y_j = r_j + γ max_a' Q(φ_j+1, a'; θ)
-            if terminated[row]:
-                q_values[0][row][action] = rewards[row]
-            else:
-                q_values[0][row][action] = rewards[row] + self.discount * np.max(next_state_q_value[0][row])
-        # ----------------------- OLD -----------------------
+        # Update Q values
+        # Q* (st, at) = rt + γ Q0'(st+1, argmax_a Q(st+1, a; θ); θ)
+        target_q_values = np.copy(current_q_values).reshape(self.memory.batch_size, -1)
+        batch_indices = np.arange(self.memory.batch_size)
+        target_q_values[batch_indices, actions] = rewards + (1 - terminated) * self.discount * np.max(next_q_values,
+                                                                                                      axis=1)
 
-        # ----------------------- NEW -----------------------
-        # for i in range(len(actions)):
-        #     action = actions[i]
-        #     reward = rewards[i]
-        #     terminal = terminated[i]
-        #
-        #     # set y_j = r_j for terminal φ_j+1
-        #     if terminal:
-        #         q_values[0][i][action] = reward
-        #     else:
-        #         q_values[0][i][action] = reward + self.discount * np.max(next_state_q_value[0][i])
-        # ----------------------- NEW -----------------------
+        # Flatten states to match target_q_values shape
+        states = states.reshape(self.memory.batch_size, -1)
 
-        self.policy.model.train_on_batch(states, q_values)
-        # Perform a gradient descent step on (y_j - Q(φ_j, a_j; θ))^2
+        # Train the model
+        # perform a gradient descent step on (y_j - Q(φ_j, a_j; θ))^2
+        self.policy.model.train_on_batch(states, target_q_values)
         self.policy.decay()

@@ -33,15 +33,14 @@ class Policy:
                 action(int): action to take
         """
         random_epsilon = round(random.random(), 2)
+        # With probability ε select a random action a
         if random_epsilon < self.epsilon:
             # print('select aciton 1')
-            action = random.choice((0, 1, 2, 3))
-            return action
+            return random.choice((0, 1, 2, 3))
 
         else:
-            # print('select aciton 2')
+            # Otherwise select a = argmax Q(s, a; θ)
             state = np.array([state])
-            # print(state, 'state', state.shape)
             output = self.model.predict(state)
             action = np.argmax(output)
             return action
