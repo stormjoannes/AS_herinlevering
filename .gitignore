@@ -1,2 +1,6 @@
 *.docx
 *.drawio
+*.idea/*
+*.iml
+*.xml
+*.pyc
